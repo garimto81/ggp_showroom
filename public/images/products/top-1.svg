@@ -1,0 +1,15 @@
+<svg width="400" height="600" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#bg1)"/>
+  <rect x="100" y="120" width="200" height="360" rx="8" fill="#f5f5f5" opacity="0.95"/>
+  <path d="M150 120 L200 80 L250 120" stroke="#e0e0e0" stroke-width="2" fill="none"/>
+  <rect x="180" y="100" width="40" height="20" rx="10" fill="#e8e8e8"/>
+  <line x1="200" y1="180" x2="200" y2="400" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="200" y="520" font-family="system-ui" font-size="24" fill="#c9a66b" text-anchor="middle" font-weight="300">WHITE SHIRT</text>
+  <text x="200" y="550" font-family="system-ui" font-size="14" fill="#888" text-anchor="middle">Classic Collection</text>
+</svg>
