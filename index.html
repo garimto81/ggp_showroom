@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GGP FASHION - Pure Showroom</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* 스크롤바 숨김 및 스크롤 영역 제거 (가상 스크롤 사용) */
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 네이티브 스크롤 차단 */
+            background-color: black;
+        }
+
+        /* 비디오 컨테이너 */
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-black">
+
+    <!-- Fixed Video Background -->
+    <div id="video-container">
+        <video 
+            id="main-video"
+            muted 
+            loop
+            playsinline 
+            preload="auto"
+            class="w-full h-full object-cover"
+        >
+            <source src="https://lhgjkbngqmysxnhqwcoc.supabase.co/storage/v1/object/public/ggp_fashion/ggp_fashion_02.webm" type="video/webm">
+        </video>
+    </div>
+
+    <!-- 360 Degree Interaction Indicator (Initially Hidden) -->
+    <div id="control-indicator" class="fixed bottom-12 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center justify-center text-white transition-opacity duration-700 opacity-0 pointer-events-none mix-blend-difference">
+        <div class="flex items-center gap-6">
+            <!-- Left Arrow -->
+            <i data-lucide="move-left" class="w-5 h-5 animate-pulse"></i>
+            
+            <!-- Center Icon & Text -->
+            <div class="flex flex-col items-center gap-2">
+                <div class="relative w-10 h-10 border border-white/50 rounded-full flex items-center justify-center">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 opacity-80"></i>
+                </div>
+                <span class="text-[10px] tracking-[0.3em] uppercase font-light text-white/90">Frame Control</span>
+            </div>
+
+            <!-- Right Arrow -->
+            <i data-lucide="move-right" class="w-5 h-5 animate-pulse"></i>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const video = document.getElementById('main-video');
+        const indicator = document.getElementById('control-indicator');
+        
+        // --- 상태 변수 ---
+        let isAutoPlaying = true;
+        let targetTime = 0;
+        
+        // 민감도 설정 (Frame 단위 정밀 제어를 위해 조정)
+        // 0.002초 단위로 반응하도록 하여 아주 세밀한 컨트롤 가능
+        const SCROLL_SENSITIVITY = 0.002; 
+        const TOUCH_SENSITIVITY = 0.005;
+
+        // 1. 초기 로드 및 자동 재생 시작
+        video.addEventListener('loadedmetadata', () => {
+            video.play().catch(e => console.log("Autoplay failed:", e));
+        });
+
+        // 2. 사용자 인터랙션 시작 시 자동재생 중단
+        function stopAutoPlay() {
+            if (isAutoPlaying) {
+                isAutoPlaying = false;
+                video.pause();
+                targetTime = video.currentTime;
+                indicator.classList.remove('opacity-0');
+            }
+        }
+
+        window.addEventListener('mousedown', stopAutoPlay);
+        window.addEventListener('touchstart', (e) => {
+            stopAutoPlay();
+            touchStartY = e.touches[0].clientY;
+        });
+
+        // 3. Infinite Scroll Logic
+        
+        window.addEventListener('wheel', (e) => {
+            stopAutoPlay();
+            if (!video.duration) return;
+
+            // 델타값 누적
+            targetTime += e.deltaY * SCROLL_SENSITIVITY;
+            handleLooping();
+        });
+
+        let touchStartY = 0;
+        window.addEventListener('touchmove', (e) => {
+            stopAutoPlay();
+            if (!video.duration) return;
+
+            const touchCurrentY = e.touches[0].clientY;
+            const deltaY = touchStartY - touchCurrentY;
+            touchStartY = touchCurrentY;
+
+            targetTime += deltaY * TOUCH_SENSITIVITY;
+            handleLooping();
+        });
+
+        function handleLooping() {
+            const duration = video.duration;
+            
+            if (targetTime < 0) {
+                targetTime = duration + (targetTime % duration);
+            } else if (targetTime > duration) {
+                targetTime = targetTime % duration;
+            }
+        }
+
+        // 4. 렌더링 루프 (프레임 스킵 제거됨)
+        function renderLoop() {
+            if (!isAutoPlaying && video.duration) {
+                // video.seeking: 현재 하드웨어가 이전 프레임을 처리 중인지 확인
+                // 처리 중이 아니라면 즉시 업데이트 시도
+                if (!video.seeking) {
+                    // 기존 코드에 있던 0.05 (약 3프레임) 제한을 제거했습니다.
+                    // 이제 0.0001초(사실상 0) 이상의 차이만 있어도 즉시 렌더링을 요청합니다.
+                    if (Math.abs(video.currentTime - targetTime) > 0.0001) {
+                        video.currentTime = targetTime;
+                    }
+                }
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        requestAnimationFrame(renderLoop);
+
+    </script>
+</body>
+</html>
