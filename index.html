@@ -35,6 +35,16 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* 재생 버튼 펄스 효과 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+        .play-btn-pulse {
+            animation: pulse-ring 2s infinite;
+        }
     </style>
 </head>
 <body class="bg-black">
@@ -53,23 +63,32 @@
         </video>
     </div>
 
-    <!-- 360 Degree Interaction Indicator (Initially Hidden) -->
-    <div id="control-indicator" class="fixed bottom-12 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center justify-center text-white transition-opacity duration-700 opacity-0 pointer-events-none mix-blend-difference">
-        <div class="flex items-center gap-6">
+    <!-- UI Overlay: 재생 상태일 때는 숨겨져 있다가, 수동 조작 시 나타남 -->
+    <div id="control-indicator" class="fixed bottom-12 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center justify-center text-white transition-all duration-500 opacity-0 translate-y-4 pointer-events-none mix-blend-difference">
+        
+        <div class="flex items-center gap-8">
             <!-- Left Arrow -->
-            <i data-lucide="move-left" class="w-5 h-5 animate-pulse"></i>
-            
-            <!-- Center Icon & Text -->
-            <div class="flex flex-col items-center gap-2">
-                <div class="relative w-10 h-10 border border-white/50 rounded-full flex items-center justify-center">
-                    <i data-lucide="refresh-cw" class="w-5 h-5 opacity-80"></i>
-                </div>
-                <span class="text-[10px] tracking-[0.3em] uppercase font-light text-white/90">Frame Control</span>
+            <div class="flex flex-col items-center gap-1 opacity-70">
+                <i data-lucide="move-left" class="w-6 h-6 animate-pulse"></i>
             </div>
+            
+            <!-- Center Play Button (Pointer events enabled) -->
+            <button id="resume-btn" class="group pointer-events-auto flex flex-col items-center gap-2 transition-transform hover:scale-110 active:scale-95 focus:outline-none">
+                <div class="relative w-14 h-14 border-2 border-white rounded-full flex items-center justify-center bg-black/20 backdrop-blur-sm group-hover:bg-white/20 transition-colors play-btn-pulse">
+                    <!-- Play Icon -->
+                    <i data-lucide="play" class="w-6 h-6 fill-white ml-1"></i>
+                </div>
+                <span class="text-[10px] tracking-[0.3em] uppercase font-bold text-white shadow-black drop-shadow-md">Resume</span>
+            </button>
 
             <!-- Right Arrow -->
-            <i data-lucide="move-right" class="w-5 h-5 animate-pulse"></i>
+            <div class="flex flex-col items-center gap-1 opacity-70">
+                <i data-lucide="move-right" class="w-6 h-6 animate-pulse"></i>
+            </div>
         </div>
+
+        <!-- Guide Text -->
+        <p class="mt-4 text-[10px] text-white/60 tracking-widest font-light uppercase">Scroll to Rotate / Click to Play</p>
     </div>
 
     <script>
@@ -77,13 +96,12 @@
 
         const video = document.getElementById('main-video');
         const indicator = document.getElementById('control-indicator');
+        const resumeBtn = document.getElementById('resume-btn');
         
         // --- 상태 변수 ---
         let isAutoPlaying = true;
         let targetTime = 0;
         
-        // 민감도 설정 (Frame 단위 정밀 제어를 위해 조정)
-        // 0.002초 단위로 반응하도록 하여 아주 세밀한 컨트롤 가능
         const SCROLL_SENSITIVITY = 0.002; 
         const TOUCH_SENSITIVITY = 0.005;
 
@@ -92,35 +110,69 @@
             video.play().catch(e => console.log("Autoplay failed:", e));
         });
 
-        // 2. 사용자 인터랙션 시작 시 자동재생 중단
+        // 2. [기능] 자동 재생 중단 (수동 모드 진입)
         function stopAutoPlay() {
             if (isAutoPlaying) {
                 isAutoPlaying = false;
                 video.pause();
                 targetTime = video.currentTime;
-                indicator.classList.remove('opacity-0');
+                
+                // UI 표시 (투명도 1, 위치 원래대로)
+                indicator.classList.remove('opacity-0', 'translate-y-4');
             }
         }
 
-        window.addEventListener('mousedown', stopAutoPlay);
+        // 3. [기능] 자동 재생 재개 (영상 모드 복귀)
+        function resumeAutoPlay(e) {
+            // 이벤트 버블링 방지 (화면 클릭으로 인한 stopAutoPlay 호출 방지)
+            if(e) e.stopPropagation();
+
+            if (!isAutoPlaying) {
+                isAutoPlaying = true;
+                video.play();
+                
+                // UI 숨김
+                indicator.classList.add('opacity-0', 'translate-y-4');
+            }
+        }
+
+        // 재생 버튼 클릭 이벤트 연결
+        resumeBtn.addEventListener('click', resumeAutoPlay);
+        // 터치 환경 대응
+        resumeBtn.addEventListener('touchstart', (e) => {
+            // 터치 시 scroll 이벤트나 touchmove로 전파되어 멈추는 것 방지
+            e.stopPropagation(); 
+            resumeAutoPlay(e);
+        }, {passive: false});
+
+
+        // 4. 사용자 인터랙션 감지 (화면 클릭/터치 시 멈춤)
+        window.addEventListener('mousedown', (e) => {
+            // 재생 버튼이 아닌 곳을 눌렀을 때만 멈춤
+            if (!resumeBtn.contains(e.target)) {
+                stopAutoPlay();
+            }
+        });
+        
         window.addEventListener('touchstart', (e) => {
-            stopAutoPlay();
-            touchStartY = e.touches[0].clientY;
+            if (!resumeBtn.contains(e.target)) {
+                stopAutoPlay();
+                touchStartY = e.touches[0].clientY;
+            }
         });
 
-        // 3. Infinite Scroll Logic
-        
+        // 5. Infinite Scroll Logic
         window.addEventListener('wheel', (e) => {
             stopAutoPlay();
             if (!video.duration) return;
-
-            // 델타값 누적
             targetTime += e.deltaY * SCROLL_SENSITIVITY;
             handleLooping();
         });
 
         let touchStartY = 0;
         window.addEventListener('touchmove', (e) => {
+            // 버튼 위에서의 터치 무브는 무시하려면 조건 추가 가능하나, 
+            // 보통 스크롤 의도이므로 멈추는 게 자연스러움
             stopAutoPlay();
             if (!video.duration) return;
 
@@ -134,7 +186,6 @@
 
         function handleLooping() {
             const duration = video.duration;
-            
             if (targetTime < 0) {
                 targetTime = duration + (targetTime % duration);
             } else if (targetTime > duration) {
@@ -142,14 +193,10 @@
             }
         }
 
-        // 4. 렌더링 루프 (프레임 스킵 제거됨)
+        // 6. 렌더링 루프
         function renderLoop() {
             if (!isAutoPlaying && video.duration) {
-                // video.seeking: 현재 하드웨어가 이전 프레임을 처리 중인지 확인
-                // 처리 중이 아니라면 즉시 업데이트 시도
                 if (!video.seeking) {
-                    // 기존 코드에 있던 0.05 (약 3프레임) 제한을 제거했습니다.
-                    // 이제 0.0001초(사실상 0) 이상의 차이만 있어도 즉시 렌더링을 요청합니다.
                     if (Math.abs(video.currentTime - targetTime) > 0.0001) {
                         video.currentTime = targetTime;
                     }
