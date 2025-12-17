@@ -38,7 +38,7 @@ const roundedMap = {
 const variantStyles = {
   light: 'bg-white/15 border-white/20',
   dark: 'bg-black/40 border-white/10',
-  accent: 'bg-[#C9A66B]/10 border-[#C9A66B]/30',
+  accent: 'bg-[#C9A66B]/20 border-[#C9A66B]/50 text-white',
 };
 
 export const GlassPanel = forwardRef<HTMLDivElement, GlassPanelProps>(

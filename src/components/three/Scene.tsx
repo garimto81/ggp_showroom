@@ -3,26 +3,15 @@
 import { Canvas } from '@react-three/fiber';
 import { Suspense } from 'react';
 import { Preload } from '@react-three/drei';
-import { Perf } from 'r3f-perf';
 import { CameraController } from './CameraController';
 import { ImagePlane } from './ImagePlane';
 import { GalleryEnvironment } from './GalleryEnvironment';
 import { WarpEffect } from './WarpEffect';
 import { products } from '@/data/products';
 
-const isDev = process.env.NODE_ENV === 'development';
-
 function SceneContent() {
   return (
     <>
-      {isDev && (
-        <Perf
-          position="top-left"
-          minimal={false}
-          showGraph={true}
-          colorBlind={false}
-        />
-      )}
 
       <CameraController />
 

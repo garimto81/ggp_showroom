@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
@@ -15,6 +16,8 @@ export function UIOverlay() {
     setTravelState,
     setCameraTarget
   } = useStore();
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   if (appPhase !== 'ready') return null;
 
@@ -217,7 +220,12 @@ export function UIOverlay() {
             {['All', 'Tops', 'Bottoms', 'Outerwear'].map((cat) => (
               <button
                 key={cat}
-                className="px-4 py-2 text-[10px] tracking-[0.15em] uppercase text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-all"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase rounded-md transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-[#C9A66B] text-white'
+                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                }`}
                 onMouseEnter={() => setCursorState('hover')}
                 onMouseLeave={() => setCursorState('default')}
               >
